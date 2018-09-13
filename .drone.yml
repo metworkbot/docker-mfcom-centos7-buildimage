@@ -1,43 +1,66 @@
+docker_common: &docker_common
+  image: plugins/docker
+  secrets: [ docker_username, docker_password ]
+  repo: metwork/mfcom-centos7-buildimage
+
+trigger_common: &trigger_common
+  image: plugins/downstream
+  fork: true
+  secrets: [ downstream_token, downstream_server ]
+  
+
 pipeline:
-  prepare:
-    image: metwork/envtpl-runimage
-    commands: 
-      - ./make_dockerfile.sh "${DRONE_BRANCH}"
-      - cat Dockerfile
   docker_master:
-    image: plugins/docker
-    secrets: [ docker_username, docker_password ]
-    repo: metwork/mfcom-centos7-buildimage
+    <<: *docker_common
+    build_args:
+      - BRANCH=master
     tags:
       - latest
-      - ${DRONE_BRANCH}
+      - master
     when:
       branch: master
       event: push
-  docker_not_master:
-    image: plugins/docker
-    secrets: [ docker_username, docker_password ]
-    repo: metwork/mfcom-centos7-buildimage
+  docker_integration:
+    <<: *docker_common
+    build_args:
+      - BRANCH=integration
+    tags:
+      - integration
+    when:
+      branch: integration
+      event: push
+  docker_other:
+    <<: *docker_common
+    build_args:
+      - BRANCH=master
     tags:
       - ${DRONE_BRANCH}
     when:
       event: push
-      branch: 
-        exclude: [ master ]
+      branch:
+        exclude: [ master, integration ]
   slack:
     image: plugins/slack
     channel: dev
     username: drone
+    secrets: [ slack_webhook ]
     when:
       status: [ failure ]
-    secrets: [ slack_webhook ]
-  trigger:
-    image: plugins/downstream
-    fork: true
+      event: push
+      branch: [ master, integration ]
+  trigger_master:
+    <<: *trigger_common
     repositories:
-      - metwork-framework/mfcom@${DRONE_BRANCH}
-    secrets: [ downstream_token, downstream_server ]
+      - metwork-framework/mfcom@master
     when:
       status: [ success ]
       event: push
-
+      branch: master
+  trigger_integration:
+    <<: *trigger_common
+    repositories:
+      - metwork-framework/mfcom@integration
+    when:
+      status: [ success ]
+      event: push
+      branch: integration
