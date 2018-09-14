@@ -2,6 +2,8 @@ docker_common: &docker_common
   image: plugins/docker
   secrets: [ docker_username, docker_password ]
   repo: metwork/mfcom-centos7-buildimage
+  params:
+    - FORCED_OS_VERSION=centos7
 
 trigger_common: &trigger_common
   image: plugins/downstream
