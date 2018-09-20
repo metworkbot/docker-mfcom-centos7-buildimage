@@ -1,6 +1,6 @@
 ARG BRANCH=master
 FROM metwork/mfext-centos7-buildimage:${BRANCH} as yum_cache
-ARG BRANCH
+ARG BRANCH=master
 RUN echo -e "[metwork_${BRANCH}]\n\
 name=Metwork Continuous Integration Branch ${BRANCH}\n\
 baseurl=http://metwork-framework.org/pub/metwork/continuous_integration/rpms/${BRANCH}/centos7/\n\
