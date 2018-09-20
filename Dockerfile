@@ -17,5 +17,5 @@ ARG BRANCH
 RUN echo ${BRANCH}
 COPY --from=yum_cache /etc/yum.repos.d/metwork.repo /etc/yum.repos.d/
 COPY --from=yum_cache /tmp/yum_cache .
-RUN cat /etc/yum.repos.d/
+RUN cat /etc/yum.repos.d/metwork.repo
 RUN yum -y install metwork-mfext
