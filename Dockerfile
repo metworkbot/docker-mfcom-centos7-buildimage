@@ -1,6 +1,7 @@
 ARG BRANCH=master
 FROM metwork/mfext-centos7-buildimage:${BRANCH} as yum_cache
 ARG BRANCH=master
+RUN echo ${BRANCH}
 RUN echo -e "[metwork_${BRANCH}]\n\
 name=Metwork Continuous Integration Branch ${BRANCH}\n\
 baseurl=http://metwork-framework.org/pub/metwork/continuous_integration/rpms/${BRANCH}/centos7/\n\
@@ -13,4 +14,5 @@ RUN yum --disablerepo=* --enablerepo=metwork_${BRANCH} -q list metwork-mfext* 2>
 FROM metwork/mfext-centos7-buildimage:${BRANCH}
 COPY --from=yum_cache /etc/yum.repos.d/metwork.repo /etc/yum.repos.d/
 COPY --from=yum_cache /tmp/yum_cache .
+RUN echo ${BRANCH}
 RUN yum -y install metwork-mfext
