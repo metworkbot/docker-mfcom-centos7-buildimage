@@ -1,6 +1,6 @@
 trigger_common: &trigger_common
-  image: plugins/downstream
-  fork: true
+  image: metwork/drone-downstream-specific-image:${DRONE_BRANCH}
+  pull: true
   secrets: [ downstream_token, downstream_server ]
   params:
     - FORCED_OS_VERSION=centos7
@@ -13,6 +13,7 @@ pipeline:
       - /var/run/docker.sock:/var/run/docker.sock
       - /root:/root
     commands:
+      - HASH_BEFORE=`docker images -q metwork/mfcom-centos7-buildimage:${DRONE_BRANCH}`
       - if test "${DRONE_BRANCH}" = "master"; then
           docker build -t metwork/mfcom-centos7-buildimage:master -t metwork/mfcom-centos7-buildimage:latest --build-arg BRANCH=master --build-arg CACHEBUST=${DRONE_BUILD_NUMBER} .;
         elif test "${DRONE_BRANCH}" = "integration"; then
@@ -20,8 +21,17 @@ pipeline:
         else
           docker build -t metwork/mfcom-centos7-buildimage:${DRONE_BRANCH} --build-arg BRANCH=master --build-arg CACHEBUST=${DRONE_BUILD_NUMBER} .;
         fi
-      - docker push metwork/mfcom-centos7-buildimage:${DRONE_BRANCH}
-      - if test "${DRONE_BRANCH}" = "master"; then docker push metwork/mfcom-centos7-buildimage:latest; fi
+      - HASH_AFTER=`docker images -q metwork/mfcom-centos7-buildimage:${DRONE_BRANCH}`
+      - if test "$${HASH_BEFORE}" = "$${HASH_AFTER}"; then
+          touch .drone_downstream_bypass;
+        else
+          if test "${DRONE_BRANCH}" = "master"; then
+            docker push metwork/mfcom-centos7-buildimage:${DRONE_BRANCH};
+            docker push metwork/mfcom-centos7-buildimage:latest;
+          elif test "${DRONE_BRANCH}" = "integration"; then
+            docker push metwork/mfcom-centos7-buildimage:${DRONE_BRANCH};
+          fi;
+        fi
     when:
        event: push 
   trigger_master:
@@ -29,7 +39,7 @@ pipeline:
     repositories:
       - metwork-framework/mfcom@master
     when:
-      status: [ success ]
+      status: success
       event: push
       branch: master
   trigger_integration:
@@ -37,6 +47,8 @@ pipeline:
     repositories:
       - metwork-framework/mfcom@integration
     when:
-      status: [ success ]
+      status: success
       event: push
-branch: integration
+      branch: integration
+
+branches: [ master, integration, ci_*, pci_* ]
